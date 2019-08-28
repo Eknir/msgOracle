@@ -129,6 +129,19 @@ contract MsgOracleOwner is SimpleGovernance {
     }
 
     /**
+    @notice Calls revertMsgPrice (from MsgOracle) when a valid proposal (per SimpleGovernance) is present.
+    @dev A proposal can be made and voted upon via the functions newProposal and vote (respectively) from SimpleGovernance.
+    The bytes32 proposal value (functions: newProposal and vote) is keccak256(abi.encodePacked("CTO", newOwner, proposalNonce))
+    See documentation at MsgOracle.
+    Function needed to be able to undo any damage which a roque or uncarefull leader can do.
+    */
+    function callRevertMsgPrice(bytes32 swarmMsg, uint256 price, uint256 validFrom, bytes32 argHash, bytes32 proposalNonce) public {
+        require(keccak256(abi.encodePacked(swarmMsg, price, validFrom)) == argHash, "MsgOracleOwner: argHash does not match arguments");
+        require(isValidProposal(keccak256(abi.encodePacked("CRMP", argHash, proposalNonce))), "MsgOracleOwner: no valid proposal");
+        msgOracle.revertMsgPrice(swarmMsg, price, validFrom);
+    }
+
+    /**
     @notice Calls transferOwnership (from MsgOracle) when a valid proposal (per SimpleGovernance) is present.
     @dev A proposal can be made and voted upon via the functions newProposal and vote (respectively) from SimpleGovernance.
     The bytes32 proposal value (functions: newProposal and vote) is keccak256(abi.encodePacked("CTO", newOwner, proposalNonce))

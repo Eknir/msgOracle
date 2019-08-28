@@ -24,7 +24,7 @@ contract MsgOracle is Ownable {
 
     event LogNewTTL(uint256 TTL);
     event LogSetMsgPrice(bytes32 indexed swarmMsg, uint256 price, uint256 validFrom);
-    event LogRevertNewMsgPrice(bytes32 indexed swarmMsg, uint256 price, uint256 validFrom);
+    event LogRevertMsgPrice(bytes32 indexed swarmMsg, uint256 price, uint256 validFrom);
     /**
     @notice Sets an initial value of TTL and sets the owner
     @dev The owner can be a EOA or a smart-contract (with any arbitrary governance structure) which can call all functions from this contract
@@ -80,7 +80,7 @@ contract MsgOracle is Ownable {
     @param price match with swarmMsg from LogSetMsgPrice(swarmMsg, price, validFrom)
     @param validFrom match with swarmMsg from LogSetMsgPrice(swarmMsg, price, validFrom)
      */
-    function revertNewMsgPrice(bytes32 swarmMsg, uint256 price, uint256 validFrom) public onlyOwner {
-        emit LogRevertNewMsgPrice(swarmMsg, price, validFrom);
+    function revertMsgPrice(bytes32 swarmMsg, uint256 price, uint256 validFrom) public onlyOwner {
+        emit LogRevertMsgPrice(swarmMsg, price, validFrom);
     }
 }
