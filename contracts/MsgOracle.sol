@@ -1,6 +1,5 @@
 pragma solidity ^0.5.10;
 
-import "./MsgOracleOwner.sol";
 import "node_modules/openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
 /**
@@ -28,11 +27,9 @@ contract MsgOracle is Ownable {
     /**
     @notice Sets an initial value of TTL and sets the owner
     @dev The owner can be a EOA or a smart-contract (with any arbitrary governance structure) which can call all functions from this contract
-    @param msgOracleOwner the owner can be a EOA or a smart-contract (with any arbitrary governance structure) which can call all functions from this contract
     @param _TTL The initial TTL, effective immediately.
     */
-    constructor(address msgOracleOwner, uint256 _TTL) internal Ownable() {
-        transferOwnership(msgOracleOwner);
+    constructor( uint256 _TTL) public Ownable() {
         TTL = _TTL;
         lastUpdated = now;
         emit LogNewTTL(TTL);

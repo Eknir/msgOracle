@@ -48,18 +48,24 @@ The `MsgOracleOwner` is designed to perform all interactions with the `MsgOracle
 - `newTTL` (within bounds)
 - `setMsgPrice`
 
-With consent from `governers`, the following functions can be called:
+With consent from `governers` (a certain percentage voted in favor of a proposal), the following functions can be called:
 - `newTTL` (no bounds)
 - `revertMsgPrice`
 - `renounceOwnership`
 - `transferOwnership`
-Furthermore, there are also functions defined by the `simpleGovernance` contract, which don't have a direct impact on the `msgOracleContract`, but which also need approval from governers. These functions are:
 - `addLeader`
 - `removeLeader`
+
+# SimpleGovernance
+This is a simple governance scheme. The scheme allows to add `governers`, who can create proposals and vote on these proposals. Once a certain treshold (`governersPercentageNeeded`) is reached, the proposal is considered valid. The assumption is that *at least* `governersPercentage` percent of `governers` is honest and has access to their private key.
+Furthermore, there are also functions defined by the `simpleGovernance` contract, which don't have a direct impact on the `msgOracleContract`, but which also need approval from governers. 
+
+Governers can create new proposals and vote on them through the functions:
+- `newProposal`
+- `vote`
+
+With consent from `governers` (`governersPercentageNeeded` percent voted in favor) , the following functions can be called:
+- `declineProposal`
 - `addGoverner`
 - `removeGoverner`
 - `changeGovernersPercentageNeeded`
-- `changeVotingWindow`
-
-Please see the contracts `msgOracleOwner` and `simpleGovernance` for a more elaborate discussion on the inner workings of the `MsgOracleOwner`.
-

@@ -1,6 +1,10 @@
 pragma solidity ^0.5.10;
+
 import "./MsgOracle.sol";
 import "./SimpleGovernance.sol";
+
+import "./../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "./../node_modules/openzeppelin-solidity/contracts/access/Roles.sol";
 
 /**
 @title MsgOracleOwner
@@ -11,17 +15,20 @@ import "./SimpleGovernance.sol";
 @dev Meant to be the owner (as per openzeppelin-solidity/contracts/ownership/Ownable.sol") of MsgOracle.
 This smart-contract can be replaced as owner by calling callTransferOwnership.
  */
-contract MsgOracleOwner is SimpleGovernance {
+contract MsgOracleOwner {
 
     using SafeMath for uint256;
+    using Roles for Roles.Role;
 
     MsgOracle msgOracle;
+    SimpleGovernance simpleGovernance;
+
     uint256 public maxTTLChangePercentage;
 
     event LeaderAdded(address indexed account);
     event LeaderRemoved(address indexed account);
     event LogSetMaxTTLPercentage(uint256 maxTTLPercentage);
-    
+
     Roles.Role private _leaders;
 
     modifier onlyLeader {
@@ -33,23 +40,18 @@ contract MsgOracleOwner is SimpleGovernance {
     @notice Delegates to the SimpleGovernance constructor,
     add a leader, set msgOracle to implement MsgOracle at address _msgOracle and sets the maxTTLChangePercentage.
     @dev Solidity does not check wether a MsgOracle lives at address _msgOracle. This must be validated by the person calling this constructor.
-    @param governers The initial governers. Passed to the constructor of SimpleGovernance.
-    @param governersPercentageNeeded Specifying the percentage of total governers needed to vote in favor for a certain proposal to become effective.
-    Passed to the constructor of SimpleGovernance.
-    @param _votingWindow Maximum time in seconds between creating a proposal and implementing the change of the proposal.
-    Passed to the constructor of SimpleGovernance.
-    @param leader The initial leader.
+    @param _simpleGovernance The address at which the SimpleGovernance contract lives.
     @param _msgOracle The address at which a MsgOracle contract lives.
+    @param leader The initial leader.
     @param _maxTTLChangePercentage intitial percentage by how much the leader can maximally change TTL at MsgOracle.
     */
     constructor(
-        address[] memory governers,
-        uint256 governersPercentageNeeded,
-        uint256 _votingWindow,
-        address leader,
+        address _simpleGovernance,
         address _msgOracle,
+        address leader,
         uint256 _maxTTLChangePercentage
-    ) internal SimpleGovernance(governers, governersPercentageNeeded, _votingWindow) {
+    ) public {
+        simpleGovernance = SimpleGovernance(_simpleGovernance);
         msgOracle = MsgOracle(_msgOracle);
         _addLeader(leader);
         _setMaxTTLChangePercentage(_maxTTLChangePercentage);
@@ -62,7 +64,10 @@ contract MsgOracleOwner is SimpleGovernance {
     @param proposalNonce Value needed to ensure always-unique proposal identifiers.
      */
     function addLeader(address account, bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(abi.encodePacked("AL", account, proposalNonce))), "MsgOracleOwner: no valid proposal");
+        require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("AL", account, proposalNonce))
+            ), "MsgOracleOwner: no valid proposal"
+        );
         _addLeader(account);
     }
 
@@ -73,7 +78,10 @@ contract MsgOracleOwner is SimpleGovernance {
     @param proposalNonce Value needed to ensure always-unique proposal identifiers.
      */
     function removeLeader(address account, bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(abi.encodePacked("RL", account, proposalNonce))), "MsgOracleOwner: no valid proposal");
+    require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("AL", account, proposalNonce))
+        ), "MsgOracleOwner: no valid proposal"
+    );
         _removeLeader(account);
     }
 
@@ -85,13 +93,12 @@ contract MsgOracleOwner is SimpleGovernance {
     @param proposalNonce Value needed to ensure always-unique proposal identifiers.
      */
     function changeMaxTTLChangePercentage(uint256 newMaxTTLChangePercentage, bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(
+        require(simpleGovernance.isValidProposal(keccak256(
             abi.encodePacked(
                 "CMTCP",
                 newMaxTTLChangePercentage,
                 proposalNonce
-            ))), "MsgOracleOwner: no valid proposal"
-        );
+            ))), "MsgOracleOwner: no valid proposal");
         _setMaxTTLChangePercentage(newMaxTTLChangePercentage);
     }
 
@@ -116,7 +123,10 @@ contract MsgOracleOwner is SimpleGovernance {
     @param proposalNonce Value needed to ensure always-unique proposal identifiers.
     */
     function callNewTTLWithProposal(uint256 newTTL, bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(abi.encodePacked("CNTWP", newTTL, proposalNonce))), "MsgOracleOwner: no valid proposal");
+        require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("CNTWP", newTTL, proposalNonce))
+            ), "MsgOracleOwner: no valid proposal"
+        );
         _callNewTTL(newTTL);
     }
 
@@ -137,7 +147,10 @@ contract MsgOracleOwner is SimpleGovernance {
     */
     function callRevertMsgPrice(bytes32 swarmMsg, uint256 price, uint256 validFrom, bytes32 argHash, bytes32 proposalNonce) public {
         require(keccak256(abi.encodePacked(swarmMsg, price, validFrom)) == argHash, "MsgOracleOwner: argHash does not match arguments");
-        require(isValidProposal(keccak256(abi.encodePacked("CRMP", argHash, proposalNonce))), "MsgOracleOwner: no valid proposal");
+        require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("CRMP", argHash, proposalNonce))
+            ), "MsgOracleOwner: no valid proposal"
+        );
         msgOracle.revertMsgPrice(swarmMsg, price, validFrom);
     }
 
@@ -148,7 +161,10 @@ contract MsgOracleOwner is SimpleGovernance {
     See documentation at MsgOracle
     */
     function callTransferOwnership(address newOwner, bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(abi.encodePacked("CTO", newOwner, proposalNonce))), "MsgOracleOwner: no valid proposal");
+        require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("CTO", newOwner, proposalNonce))
+            ), "MsgOracleOwner: no valid proposal"
+        );
         msgOracle.transferOwnership(newOwner);
     }
 
@@ -159,7 +175,10 @@ contract MsgOracleOwner is SimpleGovernance {
     See documentation at MsgOracle
     */
     function callRenounceOwnership(bytes32 proposalNonce) public {
-        require(isValidProposal(keccak256(abi.encodePacked("CRO", address(0), proposalNonce))), "MsgOracleOwner: no valid proposal");
+        require(simpleGovernance.isValidProposal(
+            keccak256(abi.encodePacked("CRO", address(0), proposalNonce))
+            ), "MsgOracleOwner: no valid proposal"
+        );
         msgOracle.renounceOwnership();
     }
 
