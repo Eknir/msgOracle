@@ -29,7 +29,7 @@ contract MsgOracle is Ownable {
     @dev The owner can be a EOA or a smart-contract (with any arbitrary governance structure) which can call all functions from this contract
     @param _TTL The initial TTL, effective immediately.
     */
-    constructor( uint256 _TTL) public Ownable() {
+    constructor(uint256 _TTL) public Ownable() {
         TTL = _TTL;
         lastUpdated = now;
         emit LogNewTTL(TTL);
@@ -63,9 +63,9 @@ contract MsgOracle is Ownable {
     */
     function setMsgPrice(bytes32 swarmMsg, uint256 price, uint256 validFrom) public onlyOwner {
         if(lastUpdated - oldTTL <= now) {
-            require(validFrom >= oldTTL, "MsgOracle: validFrom not oldTTL seconds in the future");
+            require(validFrom >= now + oldTTL, "MsgOracle: validFrom not oldTTL seconds in the future");
         } else {
-            require(validFrom >= TTL, "MsgOracle: validFrom not TTL seconds in the future");
+            require(validFrom >= now + TTL, "MsgOracle: validFrom not TTL seconds in the future");
         }
         emit LogSetMsgPrice(swarmMsg, price, validFrom);
     }
